@@ -1,0 +1,31 @@
+Metadata-Version: 2.1
+Name: onsite-mine
+Version: 0.0.4
+Summary: The simulation environment for unstructured road replay testing in onsite competitions.
+Home-page: https://github.com/WentaoZheng945/onsite_mine
+Author: Zheng Wentao
+Author-email: swjtu_zwt@163.com
+Maintainer: ZhengWentao
+Maintainer-email: swjtu_zwt@163.com
+License: MIT License
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Testing
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Requires-Python: >=3.7
+License-File: LICENSE
+Requires-Dist: descartes
+Requires-Dist: imageio
+Requires-Dist: matplotlib==3.8.1
+Requires-Dist: numpy==1.23.2
+Requires-Dist: pandas
+Requires-Dist: Pillow
+Requires-Dist: scipy
+Requires-Dist: Shapely==1.8.5
+Requires-Dist: typing
+
+# INTRODUCTION
+
+This package serves as the simulation environment for unstructured road replay testing in Onsite competitions, enabling the loading of unstructured road scenarios and interaction between the tested  algorithm and the environment.
+

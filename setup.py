@@ -6,12 +6,12 @@
 
 from setuptools import setup, find_packages
 
-with open('./setup/requirements.txt') as f:
+with open('./onsite-mine/setup/requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='onsite_mine',  # 包名
-    version='0.0.1',  # 版本
+    name='onsite-mine',  # 包名
+    version='0.0.4',  # 版本
     description="The simulation environment for unstructured road replay testing in onsite competitions.",  # 包简介
     long_description=open('README.md').read(),  # 读取文件中介绍包的详细内容
     include_package_data=True,  # 是否允许上传资源文件

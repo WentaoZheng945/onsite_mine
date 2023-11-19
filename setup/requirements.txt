@@ -1,9 +1,0 @@
-descartes
-imageio
-matplotlib>=3.8.1
-numpy
-pandas
-Pillow
-scipy
-Shapely
-typing

@@ -1,0 +1,9 @@
+descartes
+imageio
+matplotlib==3.8.1
+numpy==1.23.2
+pandas
+Pillow
+scipy
+Shapely==1.8.5
+typing
