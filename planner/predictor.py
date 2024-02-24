@@ -10,13 +10,12 @@ import numpy as np
 import bisect
 from typing import Dict,List,Tuple,Optional,Union
 
+
 # 导入onsite-mine相关模块（库中含有-,因此使用动态importlib动态导入包）
 ## onsite-mine.dynamic_scenes模块
 observation = importlib.import_module("onsite-mine.dynamic_scenes.observation")
 ## onsite-mine.common模块
 utils = importlib.import_module("onsite-mine.common.utils")
-
-
 
 
 
@@ -210,7 +209,7 @@ class ConstantAngularVelocityPredictor:
     """
     def __init__(self,t_now:float=0.0,interval:float=0.1,max_t:float=18.0,time_horizon:float=1.5)->None:
         """ 默认构造 获取每个场景后,进行初始化
-            默认时间间隔0.1 , 还有一些时间间隔是0.04;
+            默认时间间隔0.1, 还有一些时间间隔是0.04;
         """
         self.prediction_total_time_ = time_horizon
         self.dt_ = interval
@@ -412,7 +411,7 @@ class LaneSequencePredictor:
     @ staticmethod
     def _cal_similarity_score_two_yaw(yaw1_rad:float,yaw2_rad:float) ->float:
         """计算两个角度之间的相似性得分,结果在[0,1] 范围内;
-            yaw1_rad ,yaw2_rad 取值[0,2pi),无顺序要求
+            yaw1_rad,yaw2_rad 取值[0,2pi),无顺序要求
         """
         
         delt_yaw_rad = yaw1_rad-yaw2_rad
@@ -465,7 +464,7 @@ class LaneSequencePredictor:
             else:
                 delta_dist = 0
             sum_dist += delta_dist
-            ref_path_XYHeadingS.append( np.concatenate(( subarray,np.array([sum_dist]) ) ,axis=0) )
+            ref_path_XYHeadingS.append( np.concatenate(( subarray,np.array([sum_dist]) ),axis=0) )
 
         return ref_path_XYHeadingS
 
@@ -552,4 +551,4 @@ class LaneSequencePredictor:
 
 if __name__ == "__main__":
     import time
-     
+    # 调试代码

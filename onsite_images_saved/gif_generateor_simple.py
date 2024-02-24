@@ -9,16 +9,8 @@ import numpy as np
 from PIL import Image
 import imageio
 
-# Constants
-IMAGE_DIR_NAME = "image_jiangtong_intersection_2_8_4"
-# IMAGE_DIR_NAME = "image_jiangtong_intersection_2_8_4"
-# 自动计算路径
-BASE_DIR = PathlibPath(__file__).parent
-PNGS_DIR = BASE_DIR  /IMAGE_DIR_NAME  / "images"
-GIF_FILE_PATH = BASE_DIR  /IMAGE_DIR_NAME / f"{IMAGE_DIR_NAME}.gif"
-IMAGE_TEMPLATE = f'{IMAGE_DIR_NAME}_{{}}.png'
 
-def generate_gif_from_images():
+def generate_gif_from_images(PNGS_DIR, GIF_FILE_PATH, IMAGE_TEMPLATE):
     # 记录gif生成时间,用于评估效率,没有特殊用途
     tic = time.time()
     
@@ -58,4 +50,28 @@ def generate_gif_from_images():
 
 
 if __name__ == "__main__":
-    generate_gif_from_images()
+    # Constants
+    flag = 'all_scenarios'  # default
+    # 所有场景
+    if flag == 'all_scenarios':
+        dir_current_file = os.path.dirname(__file__)
+        dir_current_file = PathlibPath(dir_current_file)
+        for scenario_name in dir_current_file.iterdir():
+            if scenario_name.suffix == '.py':
+                continue
+            print(scenario_name.stem)
+            PNGS_DIR = scenario_name / "images"
+            GIF_FILE_PATH = scenario_name / f"{scenario_name.stem}.gif"
+            IMAGE_TEMPLATE = f'{scenario_name.stem}_{{}}.png'
+            generate_gif_from_images(PNGS_DIR, GIF_FILE_PATH, IMAGE_TEMPLATE)
+
+    # 指定单个场景
+    else:
+        IMAGE_DIR_NAME = "image_hailuo_loading_4"
+        # IMAGE_DIR_NAME = "image_jiangtong_intersection_2_8_4"
+        # 自动计算路径
+        BASE_DIR = PathlibPath(__file__).parent
+        PNGS_DIR = BASE_DIR / IMAGE_DIR_NAME / "images"
+        GIF_FILE_PATH = BASE_DIR / IMAGE_DIR_NAME / f"{IMAGE_DIR_NAME}.gif"
+        IMAGE_TEMPLATE = f'{IMAGE_DIR_NAME}_{{}}.png'
+        generate_gif_from_images(PNGS_DIR, GIF_FILE_PATH, IMAGE_TEMPLATE)

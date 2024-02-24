@@ -54,6 +54,9 @@ class Planner:
         输入:observation——环境信息;
         输出:ego车到达目标区域的参考路径(拼接后).
         """
+        if 0: #仅仅适用于 会车场景 jiangtong-9-1-1
+            ego_connected_path_tokens = ["path-107","path-93"]
+            return self.get_connected_waypoints_from_multi_path(observation,ego_connected_path_tokens)
         #################更新参数#################
         self._ego_x = observation['vehicle_info']['ego']['x']
         self._ego_y = observation['vehicle_info']['ego']['y']
@@ -108,7 +111,7 @@ class Planner:
                                                observation['test_setting']['goal']['y'])
             if flag_inside_goal_area:
                 path_connect_tree['layer_2'][token_2]["flag_inside_goal_area"]=True
-                get_ego_connected_path_tokens =[path_connect_tree['layer_1'],
+                ego_connected_path_tokens =[path_connect_tree['layer_1'],
                                                 token_2 ]
                 return self.get_connected_waypoints_from_multi_path(observation,ego_connected_path_tokens)
             else:
