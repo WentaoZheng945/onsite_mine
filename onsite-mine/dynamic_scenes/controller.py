@@ -19,6 +19,7 @@ from map_expansion.map_api import TgScenesMap
 from map_expansion.bit_map import BitMap
 from dynamic_scenes.lookup import CollisionLookup
 from dynamic_scenes.observation import Observation
+from dynamic_scenes.socket_module import Client
 
 
 
@@ -69,7 +70,10 @@ class ReplayInfo():
             "yawrate_radps":0
         }
         地图相关信息,具体介绍地图解析工作的教程 markdown 文档待编写
-        road_info = {}
+        self.hdmaps = {
+            'image_mask':bitmap的ndarray,
+            'tgsc_map':语义地图
+            }
         测试环境相关信息 test_setting
         test_setting = {
             "t":,
@@ -81,6 +85,8 @@ class ReplayInfo():
             },
             "end":,
             "scenario_type":,
+            "enter_loading_flag":,
+            "enter_loading_time":,
             "scenario_name":,
             "map_type":,
             "start_ego_info" 
@@ -90,7 +96,7 @@ class ReplayInfo():
 
 
     def __init__(self):
-        self.vehicle_traj = {}
+        self.vehicle_traj = {}  # 背景车轨迹
         self.ego_info = {
             "shape":{
                         "vehicle_type":"MineTruck_NTE200",
@@ -115,16 +121,19 @@ class ReplayInfo():
             "max_t":10,
             "goal":{
                 "x":[1,2,3,4 ],
-                "y":[1,2,3,4 ]
-            },# goal box:4 points [x1,x2,x3,x4],[y1,xy,y3,y4]
+                "y":[1,2,3,4 ],
+                "heading": None
+            },# goal box:4 points [x1,x2,x3,x4],[y1,y2,y3,y4]
             "end":-1,
             "scenario_name":None,
             "scenario_type":None,
+            "enter_loading_flag":False,
+            "enter_loading_time":0.00,
             "x_min":None,
             "x_max":None,
             "y_min":None,
             "y_max":None,
-            "start_ego_info":None            
+            "start_ego_info":None  # 用不到，不会读取
         } #同 Observation.test_setting
 
 
@@ -229,7 +238,7 @@ class ReplayParser():
         """
         # 场景名称与测试类型
         self.replay_info._add_settings(scenario_name=scenario['data']['scene_name'],
-                                      scenario_type=scenario['test_settings']['mode'])
+                                      scenario_type=scenario['data']['scene_name'].split("_")[1])
         dir_scene_file = scenario['data']['dir_scene_file']
         self._parse_scenario(dir_scene_file) # 解析多车场景
         self._parse_hdmaps(scenario) # 解析 地图文件
@@ -245,6 +254,7 @@ class ReplayParser():
 
         # 1) 获取ego车辆的目标区域,goal box
         self.replay_info.test_setting['goal'] = one_scenario['goal']
+        self.replay_info.test_setting['goal'].setdefault('heading', None)
         
         # 2) 步长,最大时间,最大最小xy范围
         self.replay_info._get_dt_maxt(one_scenario)
@@ -339,8 +349,12 @@ class ReplayParser():
         
 
 class ReplayController():
-    def __init__(self):
+    def __init__(self, kinetics_mode='complex'):
         self.control_info = ReplayInfo()
+        self.kinetics_mode = None
+        if kinetics_mode == 'complex':
+            self.kinetics_mode = kinetics_mode
+            self.client = Client()
 
 
     def init(self,control_info:ReplayInfo,collision_lookup:CollisionLookup) -> Observation:
@@ -350,23 +364,33 @@ class ReplayController():
 
     def step(self,action,old_observation:Observation,collision_lookup:CollisionLookup) -> Observation:
         action = self._action_cheaker(action)
-        new_observation = self._update_ego_and_t(action,old_observation)
+        if self.kinetics_mode == 'complex':
+            new_observation = self._update_ego_and_t_kinetics(action,old_observation)
+        else:
+            new_observation = self._update_ego_and_t(action, old_observation)
         new_observation = self._update_other_vehicles_to_t(new_observation)
         new_observation = self._update_end_status(new_observation)
+        if self.kinetics_mode == 'complex':
+            if new_observation.test_setting['end'] != -1:
+                self.client.client_send_sock.close()
+                self.client.client_receive_sock.close()
         return new_observation
 
 
     def _action_cheaker(self,action):
         a = np.clip(action[0],-15,15)
         rad = np.clip(action[1],-1,1)
-        return (a,rad)
+        gear = action[2]
+        if gear not in [1, 2, 3]:
+            raise ValueError("不支持{0}档位，请选择合适档位".format(gear))
+        return (a,rad,gear)
 
 
     def _get_initial_observation(self) -> Observation:
         observation = Observation()
         # vehicle_info
-        observation.vehicle_info["ego"] = self.control_info.ego_info
-        observation = self._update_other_vehicles_to_t(observation)
+        observation.vehicle_info["ego"] = self.control_info.ego_info  # 初始化主车信息
+        observation = self._update_other_vehicles_to_t(observation)  # 初始化背景车信息
         # hdmaps info
         observation.hdmaps = self.control_info.hdmaps
         # test_setting
@@ -387,7 +411,7 @@ class ReplayController():
         # 修改本车的位置,方式是前向欧拉更新,1.根据旧速度更新位置;2.然后更新速度.
         # 速度和位置的更新基于自行车模型.
         # 首先分别取出加速度和方向盘转角
-        a,rot = action
+        a,rot,gear = action
         # 取出步长
         dt = old_observation.test_setting['dt']
         # 取出本车的各类信息
@@ -405,10 +429,47 @@ class ReplayController():
                                                      v / length * 1.7 * np.tan(rot) * dt  # 更新偏航角
 
         new_observation.vehicle_info['ego']['v_mps'] = v + a * dt  # 更新速度
-        if new_observation.vehicle_info['ego']['v_mps'] < 0:
-            new_observation.vehicle_info['ego']['v_mps'] = 0
+        if new_observation.vehicle_info['ego']['v_mps'] < -10:
+            new_observation.vehicle_info['ego']['v_mps'] = -10
 
         new_observation.vehicle_info['ego']['acc_mpss'] = a  # 更新加速度
+        return new_observation
+
+    def _judge_gear(self, a, rot):
+        # TODO 完成人字形节点判断，进而判断档位
+        return 1
+
+    def _update_ego_and_t_kinetics(self,action:tuple,old_observation:Observation) -> Observation:
+        # 拷贝一份旧观察值
+        new_observation = copy.copy(old_observation)
+        # 首先修改时间,新时间=t+dt
+        new_observation.test_setting['t'] = float(
+            old_observation.test_setting['t'] +
+            old_observation.test_setting['dt']
+        )
+        # 修改本车的位置,方式是前向欧拉更新,1.根据旧速度更新位置;2.然后更新速度.
+        # 速度和位置的更新基于自行车模型.
+        # 首先分别取出加速度和方向盘转角
+        a,rot,gear = action
+        rot = rot * (180 / math.pi)
+        # 取出步长
+        dt = old_observation.test_setting['dt']
+
+        # 判断档位
+        # gear = self._judge_gear(a, rot)
+        unpacked_data = self.client.send_and_receive(gear, a, rot)
+
+        # 更新本车位置
+        new_observation.vehicle_info['ego']['x'] = unpacked_data[1]
+        new_observation.vehicle_info['ego']['y'] = unpacked_data[2]
+        # 更新航向角
+        new_observation.vehicle_info['ego']['yaw_rad'] = unpacked_data[0] * (math.pi / 180)
+        # 更新速度
+        new_observation.vehicle_info['ego']['v_mps'] = unpacked_data[3]
+        if new_observation.vehicle_info['ego']['v_mps'] < -10:
+            new_observation.vehicle_info['ego']['v_mps'] = -10
+        # 更新加速度
+        new_observation.vehicle_info['ego']['acc_mpss'] = a
         return new_observation
 
 
@@ -449,7 +510,7 @@ class ReplayController():
 
         # 检查主车与背景车是否发生碰撞
         if self._collision_detect(observation):
-            status_list += [2] #添加状态
+            status_list += [2]  # 添加状态
             print("###log### 主车与背景车发生碰撞\n")
             
 
@@ -470,12 +531,26 @@ class ReplayController():
             status_list += [3]
             print("###log### 主车与道路边界碰撞\n")
             
-        # check target area 
-        if utils.is_inside_polygon(observation.vehicle_info['ego']['x'],observation.vehicle_info['ego']['y'],observation.test_setting['goal']):
-            status_list += [4]
-            print("###log### 主车已到达目标区域\n")
-        
-        
+        # check target area
+        if observation.test_setting["scenario_type"] == "intersection" or observation.test_setting["scenario_type"] == "unloading":
+            if utils.is_inside_polygon(observation.vehicle_info['ego']['x'],observation.vehicle_info['ego']['y'],observation.test_setting['goal']):
+                status_list += [4]
+                print("###log### 主车已到达目标区域\n")
+        elif observation.test_setting["scenario_type"] == "loading":
+            if observation.test_setting["enter_loading_flag"] == False:
+                if observation.vehicle_info['ego']['v_mps'] == 0 and \
+                        utils.is_inside_polygon(observation.vehicle_info['ego']['x'], observation.vehicle_info['ego']['y'], observation.test_setting['goal']):
+                    # status_list += [4]
+                    print("###log### 主车已驶入装载区域，正在进行最终位姿调整\n")
+                    observation.test_setting["enter_loading_flag"] = True
+                    observation.test_setting['enter_loading_time'] = observation.test_setting['t']
+            elif observation.test_setting["enter_loading_flag"] == True:
+                adjusting_time = float(observation.test_setting['t'] - observation.test_setting["enter_loading_time"])  # 注意这里需要检查数据类型
+                if adjusting_time > 5:
+                    status_list += [4]
+                    print("###log### 主车已驶入装载区域，且到达位姿调整时间上限\n")
+
+
         # 从所有status中取最大的那个作为end.
         observation.test_setting['end'] = max(status_list)
         return observation
@@ -536,7 +611,7 @@ class Controller():
         self.mode = 'replay'
 
 
-    def init(self,scenario:dict,collision_lookup:CollisionLookup) -> Tuple:
+    def init(self,scenario:dict,collision_lookup:CollisionLookup, kinetics_mode:str) -> Tuple:
         """初始化运行场景,给定初始时刻的观察值
 
         Parameters
@@ -557,7 +632,7 @@ class Controller():
         self.mode = scenario['test_settings']['mode']
         if self.mode == 'replay':
             self.parser = ReplayParser()
-            self.controller = ReplayController()
+            self.controller = ReplayController(kinetics_mode)
             self.control_info = self.parser.parse(scenario)
             self.observation = self.controller.init(self.control_info,collision_lookup)
             self.traj = self.control_info.vehicle_traj

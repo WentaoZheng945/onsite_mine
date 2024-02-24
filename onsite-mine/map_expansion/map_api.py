@@ -36,7 +36,7 @@ import common.utils as utils
 
 # Define a map geometry type for polygons and lines.
 Geometry = Union[Polygon,LineString]
-locations = ['jiangxi_jiangtong','guangdong_dapai']
+locations = ['jiangxi_jiangtong','guangdong_dapai', 'anhui_hailuo']
 
 
 
@@ -72,8 +72,10 @@ class TgScenesMap:
 
         # 加载高精度矢量语义地图
         semantic_map_hashes = {
-                "jiangxi_jiangtong":'jiangxi_jiangtong_semantic_map',
-                "guangdong_dapai":'guangdong_dapai_semantic_map'  }
+            "jiangxi_jiangtong":'jiangxi_jiangtong_semantic_map',
+            "guangdong_dapai":'guangdong_dapai_semantic_map',
+            "anhui_hailuo": 'anhui_hailuo_semantic_map'
+        }
         semantic_map_hash = semantic_map_hashes[self.location]
         dir_semantic_map =  os.path.join(self.dataroot, "semantic_map" ,semantic_map_hash+'.json')
         with open(dir_semantic_map,'r') as f:
@@ -127,18 +129,18 @@ class TgScenesMap:
     def _make_token2ind(self) -> None:
         """ Store the mapping from token to layer index for each layer.
         token2ind = {
-        "node": {"node-0": 0,
-		         "node-1": 1
-		        },
-        "node_block": {"nodeblock-0": 0,
-			           "nodeblock-1": 1,
-			          },
+            "node": {"node-0": 0,
+                     "node-1": 1
+                    },
+            "node_block": {"nodeblock-0": 0,
+                           "nodeblock-1": 1,
+                          },
         }
         """
         self.token2ind = dict()
         for layer_name in self.layer_names:
-            if layer_name == 'loading_area':  # only one
-                continue
+            # if layer_name == 'loading_area':  # only one
+            #     continue
             self.token2ind[layer_name] = dict()
             for index,member in enumerate(getattr(self, layer_name)):
                 self.token2ind[layer_name][member['token']] = index  # as: token2ind['node']['node_0'] = 0
@@ -149,7 +151,7 @@ class TgScenesMap:
         Returns a record from the layer in constant runtime.在固定的运行时间内从层中返回一条记录.
         :param layer_name: Name of the layer that we are interested in.
         :param token: Token of the record.
-        :return: A single layer record.
+        :return: A single layer record.返回对应的dict
         """
         assert layer_name in self.layer_names, "Layer {} not found".format(layer_name)
 
@@ -161,7 +163,7 @@ class TgScenesMap:
         This returns the index of the record in a layer in constant runtime. .在固定的运行时间内从层中返回一条记录的id.
         :param layer_name: Name of the layer we are interested in.
         :param token: Token of the record.
-        :return: The index of the record in the layer, layer is an array.
+        :return: The index of the record in the layer, layer is an array.返回对应层给定name时的索引
         """
         return self.token2ind[layer_name][token]
 
@@ -807,13 +809,13 @@ class TgScenesMapExplorer:
         :param tokens:Optional list of tokens to render. None means all tokens are rendered.
         """
         if layer_name in self.map_api.non_geometric_polygon_layers:
-            self._render_polygon_layer(ax,layer_name,alpha,tokens)
+            self._render_polygon_layer(ax,layer_name,alpha,tokens)  # road、intersection、loading_area以及unloading_area绘制完毕
         elif layer_name in self.map_api.non_geometric_line_layers:
             # self._render_line_layer(ax,layer_name,alpha,tokens)#!待调试
             pass
         elif layer_name == "road_block":
             alpha = 1
-            self._render_road_block_polygon_layer(ax,layer_name,alpha,tokens)
+            self._render_road_block_polygon_layer(ax,layer_name,alpha,tokens)  # road_block绘制完毕
         else:
             raise ValueError("{} is not a valid layer".format(layer_name))
 
@@ -830,7 +832,7 @@ class TgScenesMapExplorer:
             raise ValueError('{} is not a polygonal layer'.format(layer_name))
 
         first_time = True
-        records = getattr(self.map_api,layer_name) # 获得 某个图层'road'的内容,dict
+        records = getattr(self.map_api,layer_name) # 获得 某个图层'road'的内容,list
         if tokens is not None:
             records = [r for r in records if r['token'] in tokens]
         else:
@@ -857,7 +859,7 @@ class TgScenesMapExplorer:
             raise ValueError('{} is error,must road_block'.format(layer_name))
 
         first_time = True
-        records = getattr(self.map_api,layer_name) # 获得 某个图层'road'的内容,dict
+        records = getattr(self.map_api,layer_name) # 获得 某个图层'road'的内容,list
         if tokens is not None:
             records = [r for r in records if r['token'] in tokens]
         else:
@@ -964,8 +966,8 @@ class TgScenesMapExplorer:
             yaw = self.map_api.dubins_pose[id_dubinspose]['yaw']
             temp_color = self.color_map['dubins_pose']
             # 绘制箭头dubinspose
-            node_ux = x + 3*np.cos(yaw) 
-            node_vy = y + 3*np.sin(yaw) 
+            node_ux = x + 3*np.cos(yaw)
+            node_vy = y + 3*np.sin(yaw)
             ax.arrow(x,y,node_ux-x,node_vy-y,color=temp_color,alpha=alpha,head_width=0.65,head_length=1.0)
 
 

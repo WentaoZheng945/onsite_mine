@@ -35,15 +35,16 @@ def check_dir(target_dir:str) -> None:
 
 class Visualizer:
     COLOR_MAP = {
-        'background_vehicle':'#6495ED',# "cornflowerblue" 矢车菊蓝;矢车菊的蓝色
-        'ego_vehicle':'#008000',
-        'warning_signal':'#e60000',
-        'traj_prediction_line':'#4de680',
-        'traj_prediction_point':'#127436',
-        'traj_true_line':'#e60000',
-        'traj_true_point':'#9B0000',
-        'traj_true_history':'#eb984e',
-        'target_box_facecolor':'#FF6347'}
+        'background_vehicle':'#6495ED', # "cornflowerblue" 矢车菊蓝;矢车菊的蓝色
+        'static_obstacle':'#4682B4',  # 静态障碍物，钢青色
+        'ego_vehicle':'#008000',  # 深绿色，主车
+        'warning_signal':'#e60000',  # 红色，警告标志
+        'traj_prediction_line':'#4de680',  # 预测轨迹，绿松石色
+        'traj_prediction_point':'#127436',  # 预测轨迹点，深绿色
+        'traj_true_line':'#e60000',  # 红色，真实轨迹
+        'traj_true_point':'#9B0000',  # 深红色，真实轨迹点
+        'traj_true_history':'#eb984e',  # 历史轨迹，橙棕色
+        'target_box_facecolor':'#FF6347'}  # 目标区域，橙红色
     X_MARGIN = 8 # 类常量
     Y_MARGIN = 8
 
@@ -74,12 +75,12 @@ class Visualizer:
         # 初始化画布
         if self.flag_visilize:
             if self.flag_save_fig_whitout_show == True:
-                plt.ioff()
+                plt.ioff()  # 关闭交互模式，没有plt.show不显示（即不显示可视化）
             else:
-                plt.ion() 
+                plt.ion()  # 交互模式，随时显示，不需要plt.show
             self.fig = plt.figure(figsize=(10.0,10.0))
             # self.fig = plt.figure(figsize=[5.0,5.0])
-            self.axbg = self.fig.add_subplot() #多个x轴,共用y轴
+            self.axbg = self.fig.add_subplot()  # 多个x轴,共用y轴
             self.axveh = self.axbg.twiny()
             self.axTraj = self.axbg.twiny()
         else:
@@ -90,6 +91,7 @@ class Visualizer:
         if observation.hdmaps:
             self.x_target = list(observation.test_setting['goal']['x'])
             self.y_target = list(observation.test_setting['goal']['y'])
+            self.heading = observation.test_setting['goal']['heading']
             # 获取绘图范围
             bitmap_info = observation.hdmaps['image_mask'].bitmap_local_info
             self.x_min = bitmap_info['utm_local_range'][0]
@@ -119,9 +121,9 @@ class Visualizer:
 
         # -------- 绘制道路 \ 绘制车辆 \  --------
         if not self.flag_hdmaps_visilized:
-            self._plot_hdmaps(observation)  
-            self._plot_target_area(observation)  
-            self.flag_hdmaps_visilized = True
+            self._plot_hdmaps(observation)  # 绘制位图、语义地图的road、intersection、loading_area、unloading_area、dubins_pose以及reference_path
+            self._plot_target_area(observation)  # 绘制目标区域(loading场景加载heading指向)
+            self.flag_hdmaps_visilized = True  # 防止绘制多次
         self._plot_vehicles(observation)
         
         # --------若发生碰撞,则绘制碰撞警告标志--------
@@ -152,8 +154,8 @@ class Visualizer:
         # 显示测试相关信息
         ts_text = "Time_stamp:" + str(round(observation.test_setting['t'],4))
         name_text = 'Test_scenario:' + str(self.scenario_name)
-        type_text = 'Test_type:' + str(self.scenario_type)
-        self.axveh.text(0.02,1.05,name_text,transform=self.axveh.transAxes,fontdict={'size':'10','color':'black'})
+        type_text = 'Task_type:' + str(self.scenario_type)
+        self.axveh.text(0.02,1.05,name_text,transform=self.axveh.transAxes,fontdict={'size':'10','color':'black'})  # axveh.transAxes表示坐标比例系
         self.axveh.text(0.02,1.08,type_text,transform=self.axveh.transAxes,fontdict={'size':'10','color':'black'})
         self.axveh.text(0.02,1.11,ts_text,transform=self.axveh.transAxes,fontdict={'size':'10','color':'black'})
         
@@ -238,7 +240,7 @@ class Visualizer:
         
         if delta_t < 5.0 :
             numOfTrajPoint_ = int(delta_t / dt)
-            float_list,keys_to_extract_line= self._generate_float_list(now_time,dt,numOfTrajPoint_)
+            float_list,keys_to_extract_line= self._generate_float_list(now_time,dt,numOfTrajPoint_)  # 返回时间戳列表
             float_list_1s,keys_to_extract_line_1s= self._generate_float_list_2(now_time,1.0,end_time)
         else:
             numOfTrajPoint_ = int(5.0/ dt) # 5秒*10hz;
@@ -329,8 +331,35 @@ class Visualizer:
             if key == 'ego':
                 self._plot_single_vehicle(key,values,c=self.COLOR_MAP['ego_vehicle'])
             else:
-                self._plot_single_vehicle(key,values,c=self.COLOR_MAP['background_vehicle'])
+                if values['shape']['vehicle_type'] == 'rock':
+                    self._plot_single_rock(key, values, c=self.COLOR_MAP['static_obstacle'])  # 静态障碍物
+                else:
+                    self._plot_single_vehicle(key,values,c=self.COLOR_MAP['background_vehicle'])
 
+    def _plot_single_rock(self, key: str, vehi: dict, c=None):
+        """绘制单个车辆BOX.
+        注:利用 matplotlib 和 patches 绘制小汽车,以 x 轴为行驶方向
+        """
+        x = vehi['x']
+        y = vehi['y']
+        yaw = vehi['yaw_rad']
+
+        x_A3 = x - vehi['shape']['locationPoint2Rear'] * np.cos(yaw) + 0.5 * vehi['shape']['width'] * np.sin(yaw)
+        y_A3 = y - vehi['shape']['locationPoint2Rear'] * np.sin(yaw) - 0.5 * vehi['shape']['width'] * np.cos(yaw)
+        width_x = vehi['shape']['length']  # 绘图,x轴方向定义为宽
+        height_y = vehi['shape']['width']  # 绘图,y轴方向定义为高
+
+        self.axveh.add_patch(
+            patches.Rectangle(
+                xy=(x_A3, y_A3),  # 矩形的左下角坐标
+                width=width_x,
+                height=height_y,
+                angle=yaw / np.pi * 180,
+                color=c,
+                fill=True,
+                zorder=3))
+        if key != 'ego':
+            self.axveh.annotate('r', (x, y))
 
     def _plot_single_vehicle(self,key:str,vehi:dict,c=None):
         """绘制单个车辆BOX.
@@ -385,6 +414,11 @@ class Visualizer:
                                               zorder=2,
                                               alpha=0.7)
             self.axbg.add_patch(pathpatch_box)
+            if self.scenario_type == 'loading' and self.heading is not None:
+                center_x,center_y = sum(x)/len(x),sum(y)/len(y)
+                node_ux = 5*np.cos(self.heading)
+                node_vy = 5*np.sin(self.heading)
+                self.axbg.arrow(center_x, center_y, node_ux, node_vy, color='#4169E1', alpha=1, head_width=1.5, head_length=1.0)
             
             
     def _plot_hdmaps(self,observation:Observation,) -> None:
@@ -400,10 +434,10 @@ class Visualizer:
         my_patch = (self.x_min,self.y_min ,self.x_max,self.y_max)  #  (x_min,y_min,x_max,y_max).
         # layer_names = ['intersection','road']
         layer_names =  ['road','intersection','loading_area','unloading_area','road_block']
-        self._plot_hdmaps_render_map_patch(tgsc_map_explorer=observation.hdmaps['tgsc_map'].explorer,
-                                           box_coords=my_patch,layer_names=layer_names,alpha=0.7,
+        self._plot_hdmaps_render_map_patch(tgsc_map_explorer=observation.hdmaps['tgsc_map'].explorer,  # TgScenesMapExplorer类
+                                           box_coords=my_patch,layer_names=layer_names,alpha=0.7,  # 坐标范围，需要绘制的层，渗透率
                                            render_egoposes_range=False,render_legend=False,
-                                           bitmap=observation.hdmaps['image_mask'],
+                                           bitmap=observation.hdmaps['image_mask'],  # Bitmap类
                                            # bitmap=observation.hdmaps['image_rgb'],
                                            ax= self.axbg)
         
@@ -422,7 +456,8 @@ class Visualizer:
         x_min,y_min,x_max,y_max = box_coords
         local_width = x_max - x_min
         local_height = y_max - y_min
-        
+
+        # 渲染位图
         if bitmap is not None:
             if bitmap.bitmap_type == 'bitmap_mask':
                 bitmap.render_mask_map_using_image_ndarray_local(ax,window_size=5,gray_flag=False) #!mask图降采样绘图
@@ -436,11 +471,11 @@ class Visualizer:
          
         #  渲染intersection的reference path,lane（交叉口中）
         if self.flag_visilize_ref_path == True:
-            tgsc_map_explorer.render_connector_path_centerlines(ax,alpha,resampling_rate=0.05)        
+            tgsc_map_explorer.render_connector_path_centerlines(ax,alpha,resampling_rate=0.05)  # 20个点去一个绘图
         
         #  渲染road的reference path,lane（道路内）
         if self.flag_visilize_ref_path == True:
-            tgsc_map_explorer.render_base_path_centerlines(ax,alpha,resampling_rate=0.2)        
+            tgsc_map_explorer.render_base_path_centerlines(ax,alpha,resampling_rate=0.2)  # 5个点取一个绘图
         
         if render_egoposes_range:
             ax.add_patch(Rectangle((x_min,y_min),local_width,local_height,fill=False,linestyle='-.',color='red',lw=3))

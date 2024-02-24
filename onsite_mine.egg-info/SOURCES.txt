@@ -12,6 +12,8 @@ onsite-mine/dynamic_scenes/lookup.py
 onsite-mine/dynamic_scenes/observation.py
 onsite-mine/dynamic_scenes/recorder.py
 onsite-mine/dynamic_scenes/scenarioOrganizer1.py
+onsite-mine/dynamic_scenes/socket_module.py
+onsite-mine/dynamic_scenes/test.py
 onsite-mine/dynamic_scenes/visualizer.py
 onsite-mine/map_expansion/__init__.py
 onsite-mine/map_expansion/bit_map.py

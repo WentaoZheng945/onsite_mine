@@ -56,13 +56,16 @@ class Observation():
         self.hdmaps = {}
         self.test_setting = {
             "scenario_name":"name",
-            "scenario_type":"replay",
+            "scenario_type":"intersection",
+            "enter_loading_flag":False,
+            "enter_loading_time":0.00,
             "t":0.0,
             "dt":0.1,
             "max_t":-1,
             "goal":{
                 "x":[-1,-1,-1,-1],
-                "y":[-1,-1,-1,-1]
+                "y":[-1,-1,-1,-1],
+                "heading":None
             },
             "end":-1,
             "x_min":None,

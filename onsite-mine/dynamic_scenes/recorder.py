@@ -51,6 +51,10 @@ class DataRecord():
             # 将当前时刻的DataFrame加入车辆的DataFrame中
             self.data[vehicle_name] = pd.concat([self.data[vehicle_name],sub_frame])
 
+            # 检查sub_frame是否为空或全部为NA，如果不是，则进行合并
+            if not sub_frame.empty and not sub_frame.isna().all().all():
+                self.data[vehicle_name] = pd.concat([self.data[vehicle_name], sub_frame])
+
     def merge_frame(self) -> pd.DataFrame:
         """将存储的所有交通参与者的DataFrame,按照时间进行合并,返回完整的DataFrame
 
@@ -69,7 +73,6 @@ class DataRecord():
             None,
             columns=[i + "_" + str(vehicle_name) for i in self.vehicle_column]
         )
-        # a = 1
 
 
 class Recorder():

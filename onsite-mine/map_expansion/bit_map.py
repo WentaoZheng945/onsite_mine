@@ -47,6 +47,7 @@ class BitMap:
             location (str,optional):具体矿区位置的名称,当前有以下可选 :`jiangxi_jiangtong`,`guangdong_dapai`. Defaults to "jiangxi_jiangtong".
             bitmap_type (str,optional):位图类型,当前可选:`bitmap_mask`,`bitmap_rgb`..Defaults to 'bitmap_mask'.
             is_transform_gray (bool,optional):黑白图 OR 灰色图. Defaults to False.
+            self.bitmap_info是整个地图的信息，self.bitmap_local_info是场景中局部地图信息，self.image_ndarray_local为局部像素矩阵
         """
 
         self.dataroot = dataroot
@@ -61,7 +62,9 @@ class BitMap:
         """
         semantic_map_hashes = {
             "jiangxi_jiangtong": 'jiangxi_jiangtong_semantic_map',
-            "guangdong_dapai": 'guangdong_dapai_semantic_map'}
+            "guangdong_dapai": 'guangdong_dapai_semantic_map',
+            "anhui_hailuo": 'anhui_hailuo_semantic_map'
+        }
         semantic_map_hash = semantic_map_hashes[self.location]
         dir_semantic_map = os.path.join(self.dataroot, "semantic_map", semantic_map_hash + '.json')
         with open(dir_semantic_map, 'r') as f:
@@ -83,14 +86,28 @@ class BitMap:
         if self.bitmap_type == 'bitmap_mask':
             bitmap_hashes = {
                 "jiangxi_jiangtong": 'jiangxi_jiangtong_bitmap_mask',
-                "guangdong_dapai": 'guangdong_dapai_bitmap_mask'}
+                "guangdong_dapai": 'guangdong_dapai_bitmap_mask',
+                "anhui_hailuo": 'anhui_hailuo_bitmap_mask'
+            }
             bitmap_hash = bitmap_hashes[self.location]
             dir_bitmap = os.path.join(self.dataroot, 'bitmap', bitmap_hash + '.png')
             if os.path.exists(dir_bitmap):
                 image = Image.open(dir_bitmap)
                 image_ndarray = np.array(image.convert('1'))  # 转为 np.ndarray
                 image_ndarray = np.flipud(image_ndarray)  # 翻转Y轴
-                # image_ndarray = image_ndarray.max() - image_ndarray # 实现颜色反转的效果. 
+                # contains_true = np.any(image_ndarray)
+                # colors = [(0.5, 0.5, 0.5), (1, 1, 1)]  # R -> G -> B
+                # n_bins = [3]  # Discretizes the interpolation into bins
+                # cmap_name = 'custom_div_cmap'
+                # cm = LinearSegmentedColormap.from_list(cmap_name, colors, N=2)
+                # fig = plt.figure(figsize=(10.0, 10.0))
+                # ax = fig.add_subplot()
+                # ax.imshow(image_ndarray, extent=(self.bitmap_info['bitmap_mask_PNG']['UTM_info']['local_x_range'][0],
+                #                                  self.bitmap_info['bitmap_mask_PNG']['UTM_info']['local_x_range'][1],
+                #                                  self.bitmap_info['bitmap_mask_PNG']['UTM_info']['local_y_range'][0],
+                #                                  self.bitmap_info['bitmap_mask_PNG']['UTM_info']['local_y_range'][1]), cmap=cm, origin='lower')
+                # plt.show()
+                # image_ndarray = image_ndarray.max() - image_ndarray # 实现颜色反转的效果.
             else:
                 raise Exception('###Exception### %s的地图路径不存在 %s! Please check.' % (self.bitmap_type, dir_bitmap))
 
@@ -192,6 +209,16 @@ class BitMap:
         y_min = self.bitmap_local_info['utm_local_range'][1] - self.bitmap_local_info['y_margin']
         x_max = self.bitmap_local_info['utm_local_range'][2] + self.bitmap_local_info['x_margin']
         y_max = self.bitmap_local_info['utm_local_range'][3] + self.bitmap_local_info['y_margin']
+
+        colors = [(0.5, 0.5, 0.5), (1, 1, 1)]  # R -> G -> B
+        n_bins = [3]  # Discretizes the interpolation into bins
+        cmap_name = 'custom_div_cmap'
+        cm = LinearSegmentedColormap.from_list(cmap_name, colors, N=2)
+        # fig = plt.figure(figsize=(10.0, 10.0))
+        # ax1 = fig.add_subplot()
+        # ax1.imshow(image_ndarray_local, extent=(x_min, x_max, y_min, y_max), cmap=cm,
+        #           origin='lower')
+        # plt.show()
 
         if gray_flag == True:  # 黑白图
             ax.imshow(image_ndarray_local, extent=(x_min, x_max, y_min, y_max), cmap='gray', origin='lower')

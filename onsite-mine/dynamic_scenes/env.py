@@ -24,7 +24,7 @@ class Env():
         self.visualizer = Visualizer()
 
 
-    def make(self,scenario:dict,collision_lookup:CollisionLookup,read_only=False, save_img_path='') -> Tuple:
+    def make(self,scenario:dict,collision_lookup:CollisionLookup,read_only=False, save_img_path='',kinetics_mode='simple') -> Tuple:
         """第一次进入读取环境信息.
 
         Args:
@@ -36,7 +36,7 @@ class Env():
             Observation: 当前时刻环境观察结果;
             traj:全局的背景车辆轨迹数据;
         """
-        observation,traj = self.controller.init(scenario,collision_lookup) 
+        observation,traj = self.controller.init(scenario,collision_lookup,kinetics_mode)
         self.recorder.init(observation,scenario['file_info']['dir_outputs'],read_only)
         self.visualizer.init(observation,
                              scenario['test_settings']['visualize'],

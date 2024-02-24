@@ -18,7 +18,7 @@ class ScenarioOrganizer():
         # dir_test_conf = os.path.abspath(dir_inputs,"test_conf.py")
         from test_conf import config   
         self.config = config
-        self.test_mode = config['test_settings']['mode']
+        self.test_mode = config['test_settings']['mode']  # replay
 
         self.config['file_info'] = {
             'dir_inputs':dir_inputs,
@@ -50,6 +50,8 @@ class ScenarioOrganizer():
                     sce['file_info']['location'] = "jiangxi_jiangtong"
                 elif location_temp == "dapai":
                     sce['file_info']['location'] = "guangdong_dapai"
+                elif location_temp == "hailuo":
+                    sce['file_info']['location'] = "anhui_hailuo"
                 else:
                     raise Exception('###Exception### 地图location 错误!')
                 # 将场景加入列表中
@@ -72,6 +74,11 @@ class ScenarioOrganizer():
         else:
             scenario_to_test = None
         return scenario_to_test
+
+    def add_result(self,concrete_scenario:dict,res:float) -> None:
+        # 判断测试模式,如果是replay,则忽略测试结果
+        if self.test_mode == 'replay':
+            return
 
     def _check_output_dir(self,dir_outputs:str) -> None:
         """检查输出文件夹是否存在,如果不存在,则创建
