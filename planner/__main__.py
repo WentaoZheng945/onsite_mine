@@ -12,7 +12,7 @@ from pathlib import Path as PathlibPath
 # 导入第三方库
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 from typing import Dict,List,Tuple,Optional,Union,Any
 
 # # 添加必要的路径到sys.path
@@ -59,9 +59,8 @@ if __name__ == "__main__":
         try:
             collision_lookup = lookup.CollisionLookup() # 边界碰撞检测模块初始化;车型不变,这个也不变
             # 使用env.make方法初始化当前测试场景
-            observation,traj = envi.make(scenario=scenario_to_test,collision_lookup = collision_lookup, save_img_path=dir_save_img, kinetics_mode='simple')
+            observation,traj = envi.make(scenario=scenario_to_test,collision_lookup = collision_lookup, save_img_path=dir_save_img, kinetics_mode='complex')
 
-            # TODO 算法初始化部分，需要上交完成
             ########### 算法 部分1:初始化 ###########
             #TODO 交叉路口单车通行任务:构建整个场景的预测器,预测所有的车辆;构建规划器\控制器,控制ego车
             predictor = Predictor(time_horizon=5.0)
@@ -83,10 +82,6 @@ if __name__ == "__main__":
                 action = action + (1,)  # 添加档位信息，默认为前进档位
                 ########### 算法 部分2:执行 ###########
                 observation = envi.step(action,traj_future,observation,traj,collision_lookup)  # 根据车辆的action,更新场景,并返回新的观测值.
-            # 如果测试完毕,将测试结果传回场景管理模块(ScenarioOrganizer)
-            so.add_result(scenario_to_test,observation['test_setting']['end'])
-            # 在每一次测试最后都关闭可视化界面,避免同时存在多个可视化
-            plt.close()
 
         except Exception as e:
             print(repr(e))
