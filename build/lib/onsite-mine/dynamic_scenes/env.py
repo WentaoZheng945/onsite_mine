@@ -1,6 +1,8 @@
 # 内置库 
 import os
 import sys
+import shlex
+import subprocess
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 # 第三方库
@@ -12,6 +14,7 @@ from dynamic_scenes.controller import Controller
 from dynamic_scenes.recorder import Recorder
 from dynamic_scenes.visualizer import Visualizer
 from dynamic_scenes.lookup import CollisionLookup
+from dynamic_scenes.kinetics_model import KineticsModelStarter
 
 
 
@@ -37,6 +40,13 @@ class Env():
             traj:全局的背景车辆轨迹数据;
         """
         observation,traj = self.controller.init(scenario,collision_lookup,kinetics_mode)
+        if kinetics_mode == "complex":
+            Starter = KineticsModelStarter(observation)
+            self.client = Starter.get_client
+        elif kinetics_mode == "simple":
+            self.client = None
+        else:
+            raise ValueError("暂不提供这种动力学模式，请在simple和complex中选择模式！")
         self.recorder.init(observation,scenario['file_info']['dir_outputs'],read_only)
         self.visualizer.init(observation,
                              scenario['test_settings']['visualize'],
@@ -46,9 +56,9 @@ class Env():
         return observation.format(),traj
 
 
-    def step(self,action:Tuple[float,float],traj_future:Dict,observation_last:Observation,traj:Dict,collision_lookup:CollisionLookup) -> Observation:
+    def step(self,action:Tuple[float,float,int],traj_future:Dict,observation_last:Observation,traj:Dict,collision_lookup:CollisionLookup) -> Observation:
         """迭代过程"""
-        observation = self.controller.step(action,collision_lookup)  # 使用车辆运动学模型单步更新场景;
+        observation = self.controller.step(action,collision_lookup,self.client)  # 使用车辆运动学模型单步更新场景;
         self.recorder.record(observation)
         # self.visualizer.update(observation)  
         self.visualizer.update(observation,traj_future,observation_last,traj)# 更新场景后,使用更新的ego车辆位置进行可视化;【CZF】添加预测轨迹+真实轨迹的比较

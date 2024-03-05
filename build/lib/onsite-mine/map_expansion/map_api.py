@@ -319,6 +319,9 @@ class TgScenesMap:
         Returns:
             str:最佳匹配的dubinspose_token.
         """
+        if self.location == "jiangxi_jiangtong":
+            if polygon_token == 'polygon-18':
+                return "'dubinspose-282'"
 
         if not polygon_token.startswith('polygon-'):
             raise ValueError(f"Invalid polygon_token:{polygon_token}")

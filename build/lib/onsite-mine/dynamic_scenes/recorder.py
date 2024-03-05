@@ -49,7 +49,7 @@ class DataRecord():
             # 修改列名,便于合并
             sub_frame.columns = list(self.data[vehicle_name].columns)
             # 将当前时刻的DataFrame加入车辆的DataFrame中
-            self.data[vehicle_name] = pd.concat([self.data[vehicle_name],sub_frame])
+            # self.data[vehicle_name] = pd.concat([self.data[vehicle_name],sub_frame])
 
             # 检查sub_frame是否为空或全部为NA，如果不是，则进行合并
             if not sub_frame.empty and not sub_frame.isna().all().all():

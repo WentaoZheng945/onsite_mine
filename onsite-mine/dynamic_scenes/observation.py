@@ -65,7 +65,7 @@ class Observation():
             "goal":{
                 "x":[-1,-1,-1,-1],
                 "y":[-1,-1,-1,-1],
-                "heading":None
+                "head":None
             },
             "end":-1,
             "x_min":None,

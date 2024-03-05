@@ -4,7 +4,7 @@ import os
 import sys
 import copy
 from itertools import combinations
-from typing import Tuple
+from typing import Tuple,Optional
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')) )
 
@@ -122,7 +122,7 @@ class ReplayInfo():
             "goal":{
                 "x":[1,2,3,4 ],
                 "y":[1,2,3,4 ],
-                "heading": None
+                "head": None
             },# goal box:4 points [x1,x2,x3,x4],[y1,y2,y3,y4]
             "end":-1,
             "scenario_name":None,
@@ -162,6 +162,11 @@ class ReplayInfo():
                                    traj_info['states']['yawrate_radps'][index][0],traj_info['states']['acc_mpss'][index][0]]):
                 if value is not None:
                     self.vehicle_traj[id][str_t][key] = (np.around(value,5))  # 轨迹保留5位小数
+
+    @staticmethod
+    def normalize_angle(angle):
+        normalized_angle = angle % (2 * math.pi)
+        return normalized_angle
     
     
     def add_ego_info(self,ego_info):
@@ -170,7 +175,7 @@ class ReplayInfo():
         """
         self.ego_info['x'] = ego_info['states']['x']
         self.ego_info['y'] = ego_info['states']['y']
-        self.ego_info['yaw_rad'] = ego_info['states']['yaw_rad']
+        self.ego_info['yaw_rad'] = self.normalize_angle(ego_info['states']['yaw_rad'])
         self.ego_info['v_mps'] = ego_info['states']['v_mps']
         self.ego_info['yawrate_radps'] = ego_info['states']['yawrate_radps']
         self.ego_info['acc_mpss'] = ego_info['states']['acc_mpss']
@@ -254,7 +259,7 @@ class ReplayParser():
 
         # 1) 获取ego车辆的目标区域,goal box
         self.replay_info.test_setting['goal'] = one_scenario['goal']
-        self.replay_info.test_setting['goal'].setdefault('heading', None)
+        self.replay_info.test_setting['goal'].setdefault('head', None)
         
         # 2) 步长,最大时间,最大最小xy范围
         self.replay_info._get_dt_maxt(one_scenario)
@@ -349,12 +354,9 @@ class ReplayParser():
         
 
 class ReplayController():
-    def __init__(self, kinetics_mode='complex'):
+    def __init__(self, kinetics_mode):
         self.control_info = ReplayInfo()
-        self.kinetics_mode = None
-        if kinetics_mode == 'complex':
-            self.kinetics_mode = kinetics_mode
-            self.client = Client()
+        self.kinetics_mode = kinetics_mode
 
 
     def init(self,control_info:ReplayInfo,collision_lookup:CollisionLookup) -> Observation:
@@ -362,24 +364,24 @@ class ReplayController():
         self.collision_lookup = collision_lookup
         return self._get_initial_observation()
 
-    def step(self,action,old_observation:Observation,collision_lookup:CollisionLookup) -> Observation:
+    def step(self,action,old_observation:Observation,collision_lookup:CollisionLookup, client:Optional[Client] = None) -> Observation:
         action = self._action_cheaker(action)
         if self.kinetics_mode == 'complex':
-            new_observation = self._update_ego_and_t_kinetics(action,old_observation)
+            new_observation = self._update_ego_and_t_kinetics(action,old_observation, client)
         else:
             new_observation = self._update_ego_and_t(action, old_observation)
+
         new_observation = self._update_other_vehicles_to_t(new_observation)
         new_observation = self._update_end_status(new_observation)
         if self.kinetics_mode == 'complex':
             if new_observation.test_setting['end'] != -1:
-                self.client.client_send_sock.close()
-                self.client.client_receive_sock.close()
+                client.close_sockets()
         return new_observation
 
 
     def _action_cheaker(self,action):
-        a = np.clip(action[0],-15,15)
-        rad = np.clip(action[1],-1,1)
+        a = np.clip(action[0],-4,2)
+        rad = np.clip(action[1],-math.pi/2,math.pi/2)
         gear = action[2]
         if gear not in [1, 2, 3]:
             raise ValueError("不支持{0}档位，请选择合适档位".format(gear))
@@ -429,8 +431,8 @@ class ReplayController():
                                                      v / length * 1.7 * np.tan(rot) * dt  # 更新偏航角
 
         new_observation.vehicle_info['ego']['v_mps'] = v + a * dt  # 更新速度
-        if new_observation.vehicle_info['ego']['v_mps'] < -10:
-            new_observation.vehicle_info['ego']['v_mps'] = -10
+        if new_observation.vehicle_info['ego']['v_mps'] < -10/3.6:
+            new_observation.vehicle_info['ego']['v_mps'] = -10/3.6
 
         new_observation.vehicle_info['ego']['acc_mpss'] = a  # 更新加速度
         return new_observation
@@ -439,7 +441,7 @@ class ReplayController():
         # TODO 完成人字形节点判断，进而判断档位
         return 1
 
-    def _update_ego_and_t_kinetics(self,action:tuple,old_observation:Observation) -> Observation:
+    def _update_ego_and_t_kinetics(self,action:tuple,old_observation:Observation, client:Client) -> Observation:
         # 拷贝一份旧观察值
         new_observation = copy.copy(old_observation)
         # 首先修改时间,新时间=t+dt
@@ -451,23 +453,23 @@ class ReplayController():
         # 速度和位置的更新基于自行车模型.
         # 首先分别取出加速度和方向盘转角
         a,rot,gear = action
-        rot = rot * (180 / math.pi)
         # 取出步长
         dt = old_observation.test_setting['dt']
 
         # 判断档位
         # gear = self._judge_gear(a, rot)
-        unpacked_data = self.client.send_and_receive(gear, a, rot)
+        unpacked_data = client.send_and_receive(gear, a, rot)
 
+        # 0:速度 1:航向角 2:x 3:y
         # 更新本车位置
-        new_observation.vehicle_info['ego']['x'] = unpacked_data[1]
-        new_observation.vehicle_info['ego']['y'] = unpacked_data[2]
+        new_observation.vehicle_info['ego']['x'] = unpacked_data[2]
+        new_observation.vehicle_info['ego']['y'] = unpacked_data[3]
         # 更新航向角
-        new_observation.vehicle_info['ego']['yaw_rad'] = unpacked_data[0] * (math.pi / 180)
+        new_observation.vehicle_info['ego']['yaw_rad'] = unpacked_data[1]
         # 更新速度
-        new_observation.vehicle_info['ego']['v_mps'] = unpacked_data[3]
-        if new_observation.vehicle_info['ego']['v_mps'] < -10:
-            new_observation.vehicle_info['ego']['v_mps'] = -10
+        new_observation.vehicle_info['ego']['v_mps'] = unpacked_data[0]
+        if new_observation.vehicle_info['ego']['v_mps'] < -10/3.6:
+            new_observation.vehicle_info['ego']['v_mps'] = -10/3.6
         # 更新加速度
         new_observation.vehicle_info['ego']['acc_mpss'] = a
         return new_observation
@@ -538,7 +540,7 @@ class ReplayController():
                 print("###log### 主车已到达目标区域\n")
         elif observation.test_setting["scenario_type"] == "loading":
             if observation.test_setting["enter_loading_flag"] == False:
-                if observation.vehicle_info['ego']['v_mps'] == 0 and \
+                if abs(observation.vehicle_info['ego']['v_mps']) < 1e-3 and \
                         utils.is_inside_polygon(observation.vehicle_info['ego']['x'], observation.vehicle_info['ego']['y'], observation.test_setting['goal']):
                     # status_list += [4]
                     print("###log### 主车已驶入装载区域，正在进行最终位姿调整\n")
@@ -639,8 +641,8 @@ class Controller():
         return self.observation,self.traj
 
 
-    def step(self,action,collision_lookup:CollisionLookup):
-        self.observation = self.controller.step(action,self.observation,collision_lookup)
+    def step(self,action,collision_lookup:CollisionLookup, client:None):
+        self.observation = self.controller.step(action,self.observation,collision_lookup,client)
         return self.observation
 
 

@@ -210,16 +210,6 @@ class BitMap:
         x_max = self.bitmap_local_info['utm_local_range'][2] + self.bitmap_local_info['x_margin']
         y_max = self.bitmap_local_info['utm_local_range'][3] + self.bitmap_local_info['y_margin']
 
-        colors = [(0.5, 0.5, 0.5), (1, 1, 1)]  # R -> G -> B
-        n_bins = [3]  # Discretizes the interpolation into bins
-        cmap_name = 'custom_div_cmap'
-        cm = LinearSegmentedColormap.from_list(cmap_name, colors, N=2)
-        # fig = plt.figure(figsize=(10.0, 10.0))
-        # ax1 = fig.add_subplot()
-        # ax1.imshow(image_ndarray_local, extent=(x_min, x_max, y_min, y_max), cmap=cm,
-        #           origin='lower')
-        # plt.show()
-
         if gray_flag == True:  # 黑白图
             ax.imshow(image_ndarray_local, extent=(x_min, x_max, y_min, y_max), cmap='gray', origin='lower')
         else:  # 创建从灰到白的自定义 colormap

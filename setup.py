@@ -11,7 +11,7 @@ with open('./onsite-mine/setup/requirements.txt') as f:
 
 setup(
     name='onsite-mine',  # 包名
-    version='0.0.6',  # 版本
+    version='0.1.0',  # 版本
     description="The simulation environment for unstructured road replay testing in onsite competitions.",  # 包简介
     long_description=open('README.md').read(),  # 读取文件中介绍包的详细内容
     include_package_data=True,  # 是否允许上传资源文件
@@ -22,6 +22,13 @@ setup(
     license='MIT License',  # 协议
     url='https://github.com/WentaoZheng945/onsite_mine',  # github或者自己的网站地址
     packages=find_packages(),  # 用setuptools找到项目所有有关的包列表
+    package_data={
+            # 如果你的包名是 "your_package"，并且MATLAB脚本和模型位于一个名为 "matlab_scripts" 的目录中
+            'onsite-mine': ['kinetic_model/*.mat',
+                            'kinetic_model/*.m',
+                            'kinetic_model/*.slxp',
+                            'kinetic_model/*.slx'],
+        },
     classifiers=[
         'Development Status :: 3 - Alpha',  # 包的开发状态，
         # Alpha 表示软件处于开发的早期阶段，可能仍然不够稳定，可能会有较大的变化。其他可能的值包括 Beta（测试阶段）、Production/Stable（稳定版）等。

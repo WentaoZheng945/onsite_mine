@@ -91,7 +91,7 @@ class Visualizer:
         if observation.hdmaps:
             self.x_target = list(observation.test_setting['goal']['x'])
             self.y_target = list(observation.test_setting['goal']['y'])
-            self.heading = observation.test_setting['goal']['heading']
+            self.heading = observation.test_setting['goal']['head']
             # 获取绘图范围
             bitmap_info = observation.hdmaps['image_mask'].bitmap_local_info
             self.x_min = bitmap_info['utm_local_range'][0]
@@ -416,9 +416,9 @@ class Visualizer:
             self.axbg.add_patch(pathpatch_box)
             if self.scenario_type == 'loading' and self.heading is not None:
                 center_x,center_y = sum(x)/len(x),sum(y)/len(y)
-                node_ux = 5*np.cos(self.heading)
-                node_vy = 5*np.sin(self.heading)
-                self.axbg.arrow(center_x, center_y, node_ux, node_vy, color='#4169E1', alpha=1, head_width=1.5, head_length=1.0)
+                node_ux = 5*np.cos(self.heading[0])
+                node_vy = 5*np.sin(self.heading[0])
+                self.axbg.arrow(center_x, center_y, node_ux, node_vy, color='red', alpha=1, head_width=2.0, head_length=2.0)
             
             
     def _plot_hdmaps(self,observation:Observation,) -> None:
