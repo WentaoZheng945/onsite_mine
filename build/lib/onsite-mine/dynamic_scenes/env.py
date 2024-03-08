@@ -53,7 +53,7 @@ class Env():
                              scenario['test_settings']['save_fig_whitout_show'],
                              img_save_path=save_img_path) # 此处通过查看配置参数,True,设置运行过程中可视化打开;
         
-        return observation.format(),traj
+        return observation.format(),traj,self.client
 
 
     def step(self,action:Tuple[float,float,int],traj_future:Dict,observation_last:Observation,traj:Dict,collision_lookup:CollisionLookup) -> Observation:

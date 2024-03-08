@@ -11,7 +11,7 @@ with open('./onsite-mine/setup/requirements.txt') as f:
 
 setup(
     name='onsite-mine',  # 包名
-    version='0.1.0',  # 版本
+    version='0.1.1',  # 版本
     description="The simulation environment for unstructured road replay testing in onsite competitions.",  # 包简介
     long_description=open('README.md').read(),  # 读取文件中介绍包的详细内容
     include_package_data=True,  # 是否允许上传资源文件
@@ -24,10 +24,15 @@ setup(
     packages=find_packages(),  # 用setuptools找到项目所有有关的包列表
     package_data={
             # 如果你的包名是 "your_package"，并且MATLAB脚本和模型位于一个名为 "matlab_scripts" 的目录中
-            'onsite-mine': ['kinetic_model/*.mat',
-                            'kinetic_model/*.m',
-                            'kinetic_model/*.slxp',
-                            'kinetic_model/*.slx'],
+            'onsite-mine': ['kinetic_model/win/*.mat',
+                            'kinetic_model/win/*.m',
+                            'kinetic_model/win/*.slxp',
+                            'kinetic_model/win/*.slx',
+                            'kinetic_model/linux/*.mat',
+                            'kinetic_model/linux/*.m',
+                            'kinetic_model/linux/*.slxp',
+                            'kinetic_model/linux/*.slx',
+                            ],
         },
     classifiers=[
         'Development Status :: 3 - Alpha',  # 包的开发状态，
@@ -39,7 +44,7 @@ setup(
         'License :: OSI Approved :: MIT License',  # 许可协议
         'Programming Language :: Python :: 3',  # 设置编写时的python版本
     ],
-    python_requires='>=3.7',  # 设置python版本要求
+    python_requires='>=3.9',  # 设置python版本要求
     install_requires=requirements,  # 安装所需要的库
     # entry_points={
     #     'console_scripts': [

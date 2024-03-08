@@ -6,6 +6,7 @@
 import os
 import sys
 import shlex
+import platform
 import subprocess
 from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
@@ -36,7 +37,8 @@ class KineticsModelStarter():
     def _write_temp_script(self, x:float, y:float, yaw:float, v0:float):
         # 编写一个tempScript.m脚本用于存储初始化信息
         current_path = Path(__file__).parent
-        tempscript = current_path.parent / 'kinetic_model' / 'tempScript.m'
+        os_type = self._judge_platform()
+        tempscript = current_path.parent / 'kinetic_model' / f'{os_type}'/'tempScript.m'
         with open(tempscript, 'w') as f:
             f.write(f"x0={x};\n")
             f.write(f"y0={y};\n")
@@ -53,7 +55,7 @@ class KineticsModelStarter():
             f.write("run('control_simulink_with_udp.m');\n")
 
         command = f"matlab -r \"run('{tempscript.as_posix()}')\""
-        result = subprocess.run(shlex.split(command), capture_output=True)
+        result = subprocess.Popen(shlex.split(command))
         return result
 
     def _check_completed(self):
@@ -61,3 +63,12 @@ class KineticsModelStarter():
         data, _ = self.client.client_receive_sock.recvfrom(1024)  # 假设信号很小，不需要大缓冲区
         if data.decode() == 'ready':
             print("MATLAB就绪，继续执行")
+
+    def _judge_platform(self):
+        os_type = platform.system()
+        if os_type == "Windows":
+            return 'win'
+        elif os_type == "Linux" or os_type == "Darwin":
+            return 'linux'
+        else:
+            print(f"不支持的操作系统: {os_type}")

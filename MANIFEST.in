@@ -1,4 +1,8 @@
-recursive-include onsite-mine/kinetic_model *.mat
-recursive-include onsite-mine/kinetic_model *.m
-recursive-include onsite-mine/kinetic_model *.slxp
-recursive-include onsite-mine/kinetic_model *.slx
+recursive-include onsite-mine/kinetic_model/win *.mat
+recursive-include onsite-mine/kinetic_model/win *.m
+recursive-include onsite-mine/kinetic_model/win *.slxp
+recursive-include onsite-mine/kinetic_model/win *.slx
+recursive-include onsite-mine/kinetic_model/linux *.mat
+recursive-include onsite-mine/kinetic_model/linux *.m
+recursive-include onsite-mine/kinetic_model/linux *.slxp
+recursive-include onsite-mine/kinetic_model/linux *.slx

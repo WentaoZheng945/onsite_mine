@@ -1,0 +1,13 @@
+x0=500;
+y0=2150;
+head=0.708;
+v0=2;
+acc=0.0;
+gear=2;
+yaw=0.0;
+load('a_brake.mat');
+load('a_thr.mat');
+load('brake.mat');
+load('thr.mat');
+modelName='VehicleModel';
+run('control_simulink_with_udp.m');
