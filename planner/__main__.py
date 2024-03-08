@@ -59,7 +59,7 @@ if __name__ == "__main__":
         try:
             collision_lookup = lookup.CollisionLookup() # 边界碰撞检测模块初始化;车型不变,这个也不变
             # 使用env.make方法初始化当前测试场景
-            observation,traj = envi.make(scenario=scenario_to_test,collision_lookup = collision_lookup, save_img_path=dir_save_img, kinetics_mode='complex')
+            observation,traj,client = envi.make(scenario=scenario_to_test,collision_lookup = collision_lookup, save_img_path=dir_save_img, kinetics_mode='complex')
 
             ########### 算法 部分1:初始化 ###########
             #TODO 交叉路口单车通行任务:构建整个场景的预测器,预测所有的车辆;构建规划器\控制器,控制ego车
@@ -85,6 +85,8 @@ if __name__ == "__main__":
 
         except Exception as e:
             print(repr(e))
+            if client is not None:
+                client.close_sockets()
         finally:
             # 如果测试完毕，将测试结果传回场景管理模块（ScenarioOrganizer)
             so.add_result(scenario_to_test, observation['test_setting']['end'])
