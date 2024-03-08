@@ -11,7 +11,7 @@ with open('./onsite-mine/setup/requirements.txt') as f:
 
 setup(
     name='onsite-mine',  # 包名
-    version='0.1.1',  # 版本
+    version='0.1.3',  # 版本
     description="The simulation environment for unstructured road replay testing in onsite competitions.",  # 包简介
     long_description=open('README.md').read(),  # 读取文件中介绍包的详细内容
     include_package_data=True,  # 是否允许上传资源文件

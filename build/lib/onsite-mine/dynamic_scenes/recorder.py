@@ -27,12 +27,12 @@ class DataRecord():
 
             ###### 每个车辆要保存的数据,注意和 self.vehicle_column 对应 #####
             values_saved={}
-            values_saved= {'x':values['x'],
-                           'y':values['y'],
-                           'yaw_rad':values['yaw_rad'],
-                           'v_mps':values['v_mps'],
+            values_saved= {'x':round(values['x'], 4),
+                           'y':round(values['y'], 4),
+                           'yaw_rad':round(values['yaw_rad'], 4),
+                           'v_mps':round(values['v_mps'], 4),
                         #    'yawrate_radps':values['yawrate_radps'],#该值不需要储存
-                           'acc_mpss':values['acc_mpss'],
+                           'acc_mpss':round(values['acc_mpss'], 4),
                            'width':values['shape']['width'],
                            'length':values['shape']['length'],
                            'locationPoint2Head':values['shape']['locationPoint2Head'],

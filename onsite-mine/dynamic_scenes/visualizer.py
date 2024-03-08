@@ -184,7 +184,7 @@ class Visualizer:
             png_dir = os.path.join(self.save_path_img,'images')
             check_dir(png_dir)
             plt.savefig(os.path.join(png_dir,f"image_{observation.test_setting['scenario_name']}_{step}.png"))
-            print(f"###保存单帧图片### 第{step}帧/最大帧数{step_sum}")
+            # print(f"###保存单帧图片### 第{step}帧/最大帧数{step_sum}")
         else:
             plt.pause(1e-7)
             plt.show()

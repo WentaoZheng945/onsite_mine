@@ -39,6 +39,7 @@ onsite-mine/kinetic_model/win/thr.mat
 onsite-mine/map_expansion/__init__.py
 onsite-mine/map_expansion/bit_map.py
 onsite-mine/map_expansion/map_api.py
+onsite-mine/map_expansion/view_global_map.py
 onsite-mine/setup/__init__.py
 onsite_mine.egg-info/PKG-INFO
 onsite_mine.egg-info/SOURCES.txt

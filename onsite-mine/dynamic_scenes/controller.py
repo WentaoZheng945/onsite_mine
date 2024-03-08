@@ -17,7 +17,7 @@ from shapely.geometry import Polygon
 import common.utils as utils
 from map_expansion.map_api import TgScenesMap
 from map_expansion.bit_map import BitMap
-from dynamic_scenes.lookup import CollisionLookup
+from dynamic_scenes.lookup import CollisionLookup,VehicleType
 from dynamic_scenes.observation import Observation
 from dynamic_scenes.socket_module import Client
 
@@ -356,19 +356,21 @@ class ReplayParser():
 class ReplayController():
     def __init__(self, kinetics_mode):
         self.control_info = ReplayInfo()
+        self.collision_lookup = None
         self.kinetics_mode = kinetics_mode
 
 
-    def init(self,control_info:ReplayInfo,collision_lookup:CollisionLookup) -> Observation:
+    def init(self,control_info:ReplayInfo) -> Observation:
         self.control_info = control_info
-        self.collision_lookup = collision_lookup
+        # self.collision_lookup = collision_lookup
         return self._get_initial_observation()
 
-    def step(self,action,old_observation:Observation,collision_lookup:CollisionLookup, client:Optional[Client] = None) -> Observation:
-        action = self._action_cheaker(action)
+    def step(self,action,old_observation:Observation,client:Optional[Client] = None) -> Observation:
         if self.kinetics_mode == 'complex':
+            action = self._action_cheaker_kinetics(action)
             new_observation = self._update_ego_and_t_kinetics(action,old_observation, client)
         else:
+            action = self._action_cheaker(action)
             new_observation = self._update_ego_and_t(action, old_observation)
 
         new_observation = self._update_other_vehicles_to_t(new_observation)
@@ -380,6 +382,14 @@ class ReplayController():
 
 
     def _action_cheaker(self,action):
+        a = np.clip(action[0], -15, 15)
+        rad = np.clip(action[1], -1, 1)
+        gear = action[2]
+        if gear not in [1, 2, 3]:
+            raise ValueError("不支持{0}档位，请选择合适档位".format(gear))
+        return (a,rad,gear)
+
+    def _action_cheaker_kinetics(self,action):
         a = np.clip(action[0],-4,2)
         rad = np.clip(action[1],-math.pi/2,math.pi/2)
         gear = action[2]
@@ -391,7 +401,17 @@ class ReplayController():
     def _get_initial_observation(self) -> Observation:
         observation = Observation()
         # vehicle_info
-        observation.vehicle_info["ego"] = self.control_info.ego_info  # 初始化主车信息
+        ego_vehicle = self.control_info.ego_info
+        observation.vehicle_info["ego"] = ego_vehicle  # 初始化主车信息
+
+        # 更新自车与边界碰撞查询表
+        if ego_vehicle["shape"]["length"] >= 8.5 and ego_vehicle["shape"]["width"] <= 9.5:
+            self.collision_lookup = CollisionLookup(type=VehicleType.MineTruck_XG90G)
+        elif ego_vehicle["shape"]["length"] >= 12.5 and ego_vehicle["shape"]["width"] <= 13.6:
+            self.collision_lookup = CollisionLookup(type=VehicleType.MineTruck_NTE200)
+        else:
+            self.collision_lookup = CollisionLookup(type=VehicleType.MineTruck_XG90G)
+
         observation = self._update_other_vehicles_to_t(observation)  # 初始化背景车信息
         # hdmaps info
         observation.hdmaps = self.control_info.hdmaps
@@ -525,7 +545,7 @@ class ReplayController():
         # 检查是否与道路边界碰撞
         local_x_range = observation.hdmaps['image_mask'].bitmap_info['bitmap_mask_PNG']['UTM_info']['local_x_range']
         local_y_range = observation.hdmaps['image_mask'].bitmap_info['bitmap_mask_PNG']['UTM_info']['local_y_range']
-        collision_flag = self.collision_lookup.collisionDetection(observation.vehicle_info['ego']['x']-local_x_range[0],
+        collision_flag = self.collision_lookup.collision_detection(observation.vehicle_info['ego']['x']-local_x_range[0],
                                                         observation.vehicle_info['ego']['y']-local_y_range[0],
                                                         observation.vehicle_info['ego']['yaw_rad'],
                                                         observation.hdmaps['image_mask'].image_ndarray)
@@ -613,7 +633,7 @@ class Controller():
         self.mode = 'replay'
 
 
-    def init(self,scenario:dict,collision_lookup:CollisionLookup, kinetics_mode:str) -> Tuple:
+    def init(self,scenario:dict, kinetics_mode:str) -> Tuple:
         """初始化运行场景,给定初始时刻的观察值
 
         Parameters
@@ -636,13 +656,13 @@ class Controller():
             self.parser = ReplayParser()
             self.controller = ReplayController(kinetics_mode)
             self.control_info = self.parser.parse(scenario)
-            self.observation = self.controller.init(self.control_info,collision_lookup)
+            self.observation = self.controller.init(self.control_info)
             self.traj = self.control_info.vehicle_traj
         return self.observation,self.traj
 
 
-    def step(self,action,collision_lookup:CollisionLookup, client:None):
-        self.observation = self.controller.step(action,self.observation,collision_lookup,client)
+    def step(self,action, client:None):
+        self.observation = self.controller.step(action,self.observation,client)
         return self.observation
 
 

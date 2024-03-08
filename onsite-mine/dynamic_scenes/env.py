@@ -27,7 +27,7 @@ class Env():
         self.visualizer = Visualizer()
 
 
-    def make(self,scenario:dict,collision_lookup:CollisionLookup,read_only=False, save_img_path='',kinetics_mode='simple') -> Tuple:
+    def make(self,scenario:dict, read_only=False, save_img_path='',kinetics_mode='simple') -> Tuple:
         """第一次进入读取环境信息.
 
         Args:
@@ -39,7 +39,7 @@ class Env():
             Observation: 当前时刻环境观察结果;
             traj:全局的背景车辆轨迹数据;
         """
-        observation,traj = self.controller.init(scenario,collision_lookup,kinetics_mode)
+        observation,traj = self.controller.init(scenario,kinetics_mode)
         if kinetics_mode == "complex":
             Starter = KineticsModelStarter(observation)
             self.client = Starter.get_client
@@ -56,9 +56,9 @@ class Env():
         return observation.format(),traj,self.client
 
 
-    def step(self,action:Tuple[float,float,int],traj_future:Dict,observation_last:Observation,traj:Dict,collision_lookup:CollisionLookup) -> Observation:
+    def step(self,action:Tuple[float,float,int],traj_future:Dict,observation_last:Observation,traj:Dict) -> Observation:
         """迭代过程"""
-        observation = self.controller.step(action,collision_lookup,self.client)  # 使用车辆运动学模型单步更新场景;
+        observation = self.controller.step(action,self.client)  # 使用车辆运动学模型单步更新场景;
         self.recorder.record(observation)
         # self.visualizer.update(observation)  
         self.visualizer.update(observation,traj_future,observation_last,traj)# 更新场景后,使用更新的ego车辆位置进行可视化;【CZF】添加预测轨迹+真实轨迹的比较
