@@ -50,8 +50,8 @@ class ScenarioOrganizer():
                     sce['file_info']['location'] = "jiangxi_jiangtong"
                 elif location_temp == "dapai":
                     sce['file_info']['location'] = "guangdong_dapai"
-                elif location_temp == "hailuo":
-                    sce['file_info']['location'] = "anhui_hailuo"
+                elif location_temp == "shovel":
+                    sce['file_info']['location'] = "anhui_shovel"
                 else:
                     raise Exception('###Exception### 地图location 错误!')
                 # 将场景加入列表中

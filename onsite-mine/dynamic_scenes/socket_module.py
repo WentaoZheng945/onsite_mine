@@ -2,6 +2,7 @@
 # Author：Wentao Zheng
 # E-mail: swjtu_zwt@163.com
 # developed time: 2024/2/8 12:17
+import os
 import socket
 import struct  # 解析simulink模型打包来的数据要用
 import time
@@ -55,7 +56,8 @@ class Client():
             elif os_type == "Linux" or os_type == "Darwin":
                 # 对于Linux和MacOS系统，使用pkill
                 # MacOS系统也被视为类Unix系统，通常使用和Linux相同的命令
-                subprocess.run(["pkill", "matlab"], check=True)
+                # subprocess.run(["pkill", "matlab"], check=True)
+                os.system("ps aux|grep 'MATLAB'|grep -v 'grep'|awk '{print $2}'|xargs kill")
                 print("所有MATLAB进程已被成功终止。")
             else:
                 print(f"不支持的操作系统: {os_type}")

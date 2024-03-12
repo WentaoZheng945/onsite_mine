@@ -63,7 +63,7 @@ class BitMap:
         semantic_map_hashes = {
             "jiangxi_jiangtong": 'jiangxi_jiangtong_semantic_map',
             "guangdong_dapai": 'guangdong_dapai_semantic_map',
-            "anhui_hailuo": 'anhui_hailuo_semantic_map'
+            "anhui_shovel": 'anhui_shovel_semantic_map'
         }
         semantic_map_hash = semantic_map_hashes[self.location]
         dir_semantic_map = os.path.join(self.dataroot, "semantic_map", semantic_map_hash + '.json')
@@ -87,7 +87,7 @@ class BitMap:
             bitmap_hashes = {
                 "jiangxi_jiangtong": 'jiangxi_jiangtong_bitmap_mask',
                 "guangdong_dapai": 'guangdong_dapai_bitmap_mask',
-                "anhui_hailuo": 'anhui_hailuo_bitmap_mask'
+                "anhui_shovel": 'anhui_shovel_bitmap_mask'
             }
             bitmap_hash = bitmap_hashes[self.location]
             dir_bitmap = os.path.join(self.dataroot, 'bitmap', bitmap_hash + '.png')

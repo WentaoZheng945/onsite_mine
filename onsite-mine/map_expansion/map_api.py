@@ -36,7 +36,7 @@ import common.utils as utils
 
 # Define a map geometry type for polygons and lines.
 Geometry = Union[Polygon,LineString]
-locations = ['jiangxi_jiangtong','guangdong_dapai', 'anhui_hailuo']
+locations = ['jiangxi_jiangtong','guangdong_dapai', 'anhui_shovel']
 
 
 
@@ -74,7 +74,7 @@ class TgScenesMap:
         semantic_map_hashes = {
             "jiangxi_jiangtong":'jiangxi_jiangtong_semantic_map',
             "guangdong_dapai":'guangdong_dapai_semantic_map',
-            "anhui_hailuo": 'anhui_hailuo_semantic_map'
+            "anhui_shovel": 'anhui_shovel_semantic_map'
         }
         semantic_map_hash = semantic_map_hashes[self.location]
         dir_semantic_map =  os.path.join(self.dataroot, "semantic_map" ,semantic_map_hash+'.json')
