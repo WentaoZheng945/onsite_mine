@@ -1,1 +1,1 @@
-onsite-mine==0.06
+onsite-mine==0.05

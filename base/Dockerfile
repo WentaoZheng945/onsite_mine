@@ -14,4 +14,4 @@ RUN python3 --version
 RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 安装测试环境
-RUN pip install onsite-mine==0.0.6 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install onsite-mine==0.1.5 -i https://pypi.tuna.tsinghua.edu.cn/simple
